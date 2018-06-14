@@ -178,5 +178,45 @@ def add_article():
         return redirect(url_for("dashboard"))
     return render_template("add_article.html", form = form)
 
+
+@app.route("/edit_article/<string:id>", methods=['GET', 'POST'])
+@is_logged_in
+def edit_article(id):
+    # Create Cursor
+    cursor = mysql.connection.cursor()
+    # Get article by id
+    result = cursor.execute("SELECT * FROM articles WHERE id = %s", [id])
+    article = cursor.fetchone()
+    cursor.close()
+    form = ArticleForm(request.form)    
+    form.title.data = article['title']
+    form.body.data = article['body']
+    # Get the Form
+    if request.method == 'POST' and form.validate():
+        title = request.form["title"]
+        body = request.form['body']
+        # Create Cursor
+        cursor = mysql.connection.cursor()
+        # Execute
+        cursor.execute("UPDATE articles SET title=%s, body=%s WHERE id = %s", (title, body))
+        # Commit to DB
+        mysql.connection.commit()
+        # Close Connection
+        cursor.close()
+        flash("Article Updated", "success")
+        return redirect(url_for("dashboard"))
+    return render_template("edit_article.html", form = form)
+
+@app.route("/delete_article/<string:id>", methods=['POST'])
+@is_logged_in
+def delete_article(id):
+    cursor = mysql.connection.cursor()
+
+    cursor.execute("DELETE FROM articles WHERE id = %s", [id])
+    mysql.connection.commit()
+    cursor.close()
+    flash("Article Deleted", 'success')
+    return redirect(url_for("dashboard"))
+
 if __name__ == "__main__":
     app.run(debug=True)
